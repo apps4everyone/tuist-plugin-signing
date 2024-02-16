@@ -1,0 +1,37 @@
+# Xcode
+# Source: https://github.com/github/gitignore/blob/master/Objective-C.gitignore
+#
+
+build/
+.build/
+.bundle/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata
+*.xccheckout
+*.moved-aside
+DerivedData
+*.hmap
+*.ipa
+*.xcuserstate
+*.xcscmblueprint
+.DS_Store
+.ruby-version
+fastlane/report.xml
+*dSYM.zip
+*.gcda
+*.gcno
+Brewfile.lock.json
+.env
+
+xcodebuild.log
+Derived/
+
+*.xcworkspace/
+*.xcodeproj/
