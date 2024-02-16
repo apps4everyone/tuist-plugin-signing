@@ -1,0 +1,25 @@
+import Foundation
+import ArgumentParser
+
+extension MainCommand {
+    struct EncryptCommand: ParsableCommand {
+        static var configuration: CommandConfiguration {
+            CommandConfiguration(
+                commandName: "encrypt",
+                abstract: "Encrypts all files in Tuist/Signing directory"
+            )
+        }
+        
+        @Option(
+            name: .shortAndLong,
+            help: "The path to the folder containing the certificates you would like to encrypt",
+            completion: .directory
+        )
+        var path: String?
+        
+        func run() throws {
+            logger.info("EncryptCommand.run()")
+            try EncryptService().run(path: self.path)
+        }
+    }
+}

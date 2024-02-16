@@ -10,7 +10,7 @@ let package = Package(
     products: [
         .executable(
             name: "tuist-plugin-signing",
-            targets: [.tuistSigning]
+            targets: [.tuistPluginSigning]
         )
     ],
     dependencies: [
@@ -33,14 +33,14 @@ let package = Package(
     ],
     targets: [
         .executableTarget(
-            name: .tuistSigning,
+            name: .tuistPluginSigning,
             dependencies: [
-                .byName(name: .tuistSigningLibrary),
+                .byName(name: .tuistPluginSigningFramework),
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ]
         ),
         .target(
-            name: .tuistSigningLibrary,
+            name: .tuistPluginSigningFramework,
             dependencies: [
                 .product(name: "TSCBasic", package: "swift-tools-support-core"),
                 .product(name: "TuistCore", package: "tuist"),
@@ -54,6 +54,6 @@ let package = Package(
 )
 
 extension String {
-    static let tuistSigning = "TuistSigning"
-    static let tuistSigningLibrary = "TuistSigningLibrary"
+    static let tuistPluginSigning = "TuistPluginSigning"
+    static let tuistPluginSigningFramework = "TuistPluginSigningFramework"
 }
