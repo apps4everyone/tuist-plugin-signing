@@ -5,60 +5,65 @@ import TuistGraph
 import TuistSupport
 import TuistCore
 import TuistGraph
+import TSCBasic
 import TuistLoader
 import TuistKit
 import Combine
+import ProjectAutomation
 
 extension MainCommand {
     struct InstallCommand: AsyncParsableCommand {
         public static var configuration: CommandConfiguration {
             CommandConfiguration(
-                commandName: "Install",
+                commandName: "install",
                 abstract: "A command for Installing Certificates and ProvisioningProfiles"
             )
         }
 
+        @Option(
+            name: .shortAndLong,
+            help: "The path to the folder containing the manifest",
+            completion: .directory
+        )
+        var path: String?
+
         public func run() async throws {
             logger.info("TestCommand.run()")
 
-            try await self.install()
+            try! await self.install()
         }
 
         private func install() async throws {
-            #if DEBUG
-            let absolutePath = try AbsolutePath.root.appending(
-                RelativePath(validating: "Users/stefanfessler/git/EGIT/george-app-ios-48")
-            )
-            #else
-            let absolutePath = FileHandler.shared.currentPath
-            #endif
+            var absolutePath: AbsolutePath?
+            if let path {
+                absolutePath = try? AbsolutePath(validating: path)
+            } else {
+                #if DEBUG
+                if let baselineFile = ProcessInfo.processInfo.environment["TUIST_PROJECT_PATH"] {
+                    absolutePath = try AbsolutePath.root.appending(
+                        RelativePath(validating: baselineFile)
+                    )
+                } else {
+                    absolutePath = FileHandler.shared.currentPath
+                }
+                #else
+                absolutePath = FileHandler.shared.currentPath
+                #endif
+            }
+            guard let absolutePath else {
+                assertionFailure("absolutePath missing")
+                return
+            }
+
             logger.info("\(absolutePath)")
 
-            let manifestLoader = ManifestLoaderFactory().createManifestLoader()
-
-            let manifestGraphLoader = ManifestGraphLoader(
-                manifestLoader: manifestLoader,
-                workspaceMapper: SequentialWorkspaceMapper(mappers: []),
-                graphMapper: SequentialGraphMapper([])
-            )
-
-            let result: (
-                Graph,
-                [SideEffectDescriptor],
-                [LintingIssue]
-            ) = try await manifestGraphLoader.load(path: absolutePath)
-
-            let graph: Graph = result.0
-
-            logger.info("\(graph.workspace.name)")
-            logger.info("\(graph.projects.count)")
-
-            let graphTraverser = GraphTraverser(graph: graph)
+            let graph: ProjectAutomation.Graph = try Tuist.graph()
 
             let signingInteractor = SigningInteractor()
 
             let issues = try signingInteractor.install(
-                graphTraverser: graphTraverser
+                path: absolutePath,
+                graph: graph
             )
 
             let warnings = issues.filter { lintingIssue in

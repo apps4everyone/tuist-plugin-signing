@@ -1,11 +1,12 @@
 import Foundation
 import TuistGraph
 import TuistCore
+import ProjectAutomation
 
 protocol SigningLinting {
     func lint(certificate: Certificate, provisioningProfile: ProvisioningProfile) -> [LintingIssue]
     func lint(certificate: Certificate) -> [LintingIssue]
-    func lint(provisioningProfile: ProvisioningProfile, target: Target) -> [LintingIssue]
+    func lint(provisioningProfile: ProvisioningProfile, target: ProjectAutomation.Target) -> [LintingIssue]
 }
 
 final class SigningLinter: SigningLinting {
@@ -36,7 +37,7 @@ final class SigningLinter: SigningLinting {
         return issues
     }
 
-    func lint(provisioningProfile: ProvisioningProfile, target: Target) -> [LintingIssue] {
+    func lint(provisioningProfile: ProvisioningProfile, target: ProjectAutomation.Target) -> [LintingIssue] {
         let appIdPrefix = provisioningProfile.applicationIdPrefix.first ?? provisioningProfile.teamId
         let appId = appIdPrefix + "." + target.bundleId
         let invalidProvisioningProfileIssue = LintingIssue(

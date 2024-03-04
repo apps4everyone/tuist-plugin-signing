@@ -19,7 +19,13 @@ extension MainCommand {
 
         func run() throws {
             logger.info("DecryptCommand.run()")
-            try DecryptService().run(path: self.path)
+
+            guard let path else {
+                logger.error("No path")
+                return
+            }
+
+            try DecryptService().run(path: path)
         }
     }
 }

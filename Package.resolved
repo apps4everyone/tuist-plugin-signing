@@ -68,8 +68,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tid-kijyun/Kanna.git",
       "state" : {
-        "revision" : "f9e4922223dd0d3dfbf02ca70812cf5531fc0593",
-        "version" : "5.2.7"
+        "revision" : "41c3d28ea0eac07e4551b28def9de1ede702e739",
+        "version" : "5.3.0"
       }
     },
     {
@@ -221,8 +221,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tuist/tuist",
       "state" : {
-        "revision" : "06dc64fc63fd45175991a02852339e91235cca85",
-        "version" : "4.2.5"
+        "revision" : "c65bcc37a3352d2cc0cd8e45fe609751bc95cda6",
+        "version" : "4.5.0"
       }
     },
     {
@@ -230,8 +230,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/cpisciotta/xcbeautify",
       "state" : {
-        "revision" : "84d24a9854e6fdcd2c91122d50a3189b072e8136",
-        "version" : "1.4.0"
+        "revision" : "82bc54c25c78284555759277d4d92fef5627f95e",
+        "version" : "1.6.0"
       }
     },
     {
@@ -239,8 +239,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tuist/XcodeProj",
       "state" : {
-        "revision" : "e29e0db843062f5157f77d5b68f237eb5aa43f12",
-        "version" : "8.18.0"
+        "revision" : "75e787fb3eb5a8397c3d06d5a71e667ac2d20ac1",
+        "version" : "8.19.0"
       }
     },
     {

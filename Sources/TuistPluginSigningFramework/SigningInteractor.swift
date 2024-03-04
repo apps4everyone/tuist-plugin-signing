@@ -3,11 +3,15 @@ import TSCBasic
 import TuistSupport
 import TuistCore
 import TuistGraph
+import ProjectAutomation
 
 /// Interacts with signing
 public protocol SigningInteracting {
     /// Install signing for a given graph
-    func install(graphTraverser: GraphTraversing) throws -> [LintingIssue]
+    func install(
+        path: AbsolutePath,
+        graph: ProjectAutomation.Graph
+    ) throws -> [LintingIssue]
 }
 
 public final class SigningInteractor: SigningInteracting {
@@ -49,10 +53,12 @@ public final class SigningInteractor: SigningInteracting {
         self.signingCipher = signingCipher
     }
 
-    public func install(graphTraverser: GraphTraversing) throws -> [LintingIssue] {
-        let entryPath = graphTraverser.path
-        guard let signingDirectory = try signingFilesLocator.locateSigningDirectory(from: entryPath),
-              let derivedDirectory = rootDirectoryLocator.locate(from: entryPath)?
+    public func install(
+        path: AbsolutePath,
+        graph: ProjectAutomation.Graph
+    ) throws -> [LintingIssue] {
+        guard let signingDirectory = try signingFilesLocator.locateSigningDirectory(from: path),
+              let derivedDirectory = rootDirectoryLocator.locate(from: path)?
               .appending(component: Constants.DerivedDirectory.name)
         else { return [] }
 
@@ -66,13 +72,17 @@ public final class SigningInteractor: SigningInteracting {
         try securityController.unlockKeychain(at: keychainPath, password: masterKey)
         defer { try? securityController.lockKeychain(at: keychainPath, password: masterKey) }
 
-        try signingCipher.decryptSigning(at: entryPath, keepFiles: true)
-        defer { try? signingCipher.encryptSigning(at: entryPath, keepFiles: false) }
+        try signingCipher.decryptSigning(at: path, keepFiles: true)
+        defer { try? signingCipher.encryptSigning(at: path, keepFiles: false) }
 
-        let (certificates, provisioningProfiles) = try signingMatcher.match(from: graphTraverser.path)
+        let (certificates, provisioningProfiles) = try signingMatcher.match(from: path)
 
-        return try graphTraverser.allTargets().sorted().flatMap { target in
-            try install(
+        let targets: [ProjectAutomation.Target] = graph.projects.flatMap { (_, value) in
+            value.targets
+        }
+
+        return try targets.flatMap { target in
+            try self.install(
                 target: target,
                 keychainPath: keychainPath,
                 certificates: certificates,
@@ -84,24 +94,15 @@ public final class SigningInteractor: SigningInteracting {
     // MARK: - Helpers
 
     private func install(
-        target: GraphTarget,
+        target: ProjectAutomation.Target,
         keychainPath: AbsolutePath,
         certificates: [Fingerprint: Certificate],
         provisioningProfiles: [TargetName: [ConfigurationName: ProvisioningProfile]]
     ) throws -> [LintingIssue] {
-        let targetConfigurations = target.target.settings?.configurations ?? [:]
-        /// Filtering certificate-provisioning profile pairs, so they are installed only when necessary (they correspond to some
-        /// configuration and target in the project)
-        let signingPairs = Set(
-            targetConfigurations
-                .merging(
-                    target.project.settings.configurations,
-                    uniquingKeysWith: { config, _ in config }
-                )
-                .keys
-        )
-        .compactMap { configuration -> (certificate: Certificate, provisioningProfile: ProvisioningProfile)? in
-            guard let provisioningProfile = provisioningProfiles[target.target.name]?[configuration.name],
+        let configurationNames: Set<String> = Set(target.settings.configurations.map { $0.key.name } )
+
+        let signingPairs = configurationNames.compactMap { configurationName -> (certificate: Certificate, provisioningProfile: ProvisioningProfile)? in
+            guard let provisioningProfile = provisioningProfiles[target.name]?[configurationName],
                   let certificate = certificates.first(for: provisioningProfile)
             else {
                 return nil
@@ -118,7 +119,7 @@ public final class SigningInteractor: SigningInteracting {
         try provisioningProfileInstallLintIssues.printAndThrowErrorsIfNeeded()
 
         let provisioningProfileLintIssues = signingPairs.map(\.provisioningProfile).flatMap {
-            signingLinter.lint(provisioningProfile: $0, target: target.target)
+            signingLinter.lint(provisioningProfile: $0, target: target)
         }
         try provisioningProfileLintIssues.printAndThrowErrorsIfNeeded()
 

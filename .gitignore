@@ -35,3 +35,6 @@ Derived/
 
 *.xcworkspace/
 *.xcodeproj/
+*.xcscheme
+tuist-plugin-signing
+tuist-plugin-signing.tuist-plugin.zip
