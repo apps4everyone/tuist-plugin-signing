@@ -12,6 +12,12 @@ public protocol SigningInteracting {
         path: AbsolutePath,
         graph: ProjectAutomation.Graph
     ) throws -> [LintingIssue]
+    
+    /// Exports the provisioning profiles infos JSON
+    func export(
+        path: AbsolutePath,
+        graph: ProjectAutomation.Graph
+    ) throws -> [LintingIssue]
 }
 
 public final class SigningInteractor: SigningInteracting {
@@ -57,25 +63,30 @@ public final class SigningInteractor: SigningInteracting {
         path: AbsolutePath,
         graph: ProjectAutomation.Graph
     ) throws -> [LintingIssue] {
-        guard let signingDirectory = try signingFilesLocator.locateSigningDirectory(from: path),
-              let derivedDirectory = rootDirectoryLocator.locate(from: path)?
+        guard let signingDirectory = try self.signingFilesLocator.locateSigningDirectory(from: path),
+              let derivedDirectory = self.rootDirectoryLocator.locate(from: path)?
               .appending(component: Constants.DerivedDirectory.name)
         else { return [] }
 
         let keychainPath = derivedDirectory.appending(component: Constants.DerivedDirectory.signingKeychain)
 
-        let masterKey = try signingCipher.readMasterKey(at: signingDirectory)
+        let masterKey = try self.signingCipher.readMasterKey(at: signingDirectory)
+        
         try FileHandler.shared.createFolder(derivedDirectory)
+
         if !FileHandler.shared.exists(keychainPath) {
-            try securityController.createKeychain(at: keychainPath, password: masterKey)
+            try self.securityController.createKeychain(at: keychainPath, password: masterKey)
         }
-        try securityController.unlockKeychain(at: keychainPath, password: masterKey)
-        defer { try? securityController.lockKeychain(at: keychainPath, password: masterKey) }
+        
+        try self.securityController.unlockKeychain(at: keychainPath, password: masterKey)
+        
+        defer { try? self.securityController.lockKeychain(at: keychainPath, password: masterKey) }
 
-        try signingCipher.decryptSigning(at: path, keepFiles: true)
-        defer { try? signingCipher.encryptSigning(at: path, keepFiles: false) }
+        try self.signingCipher.decryptSigning(at: path, keepFiles: true)
+        
+        defer { try? self.signingCipher.encryptSigning(at: path, keepFiles: false) }
 
-        let (certificates, provisioningProfiles) = try signingMatcher.match(from: path)
+        let (certificates, provisioningProfiles) = try self.signingMatcher.match(from: path)
 
         let targets: [ProjectAutomation.Target] = graph.projects.flatMap { (_, value) in
             value.targets
@@ -89,6 +100,43 @@ public final class SigningInteractor: SigningInteracting {
                 provisioningProfiles: provisioningProfiles
             )
         }
+    }
+
+    public func export(
+        path: AbsolutePath,
+        graph: ProjectAutomation.Graph
+    ) throws -> [LintingIssue] {
+        guard let signingDirectory = try self.signingFilesLocator.locateSigningDirectory(from: path),
+              let derivedDirectory = self.rootDirectoryLocator.locate(from: path)?
+              .appending(component: Constants.DerivedDirectory.name)
+        else { return [] }
+
+        let keychainPath = derivedDirectory.appending(component: Constants.DerivedDirectory.signingKeychain)
+
+        let masterKey = try signingCipher.readMasterKey(at: signingDirectory)
+        
+        try FileHandler.shared.createFolder(derivedDirectory)
+
+        if !FileHandler.shared.exists(keychainPath) {
+            try self.securityController.createKeychain(at: keychainPath, password: masterKey)
+        }
+        
+        try self.securityController.unlockKeychain(at: keychainPath, password: masterKey)
+        
+        defer { try? self.securityController.lockKeychain(at: keychainPath, password: masterKey) }
+
+        try self.signingCipher.decryptSigning(at: path, keepFiles: true)
+        
+        defer { try? self.signingCipher.encryptSigning(at: path, keepFiles: false) }
+
+        let (_, provisioningProfiles) = try self.signingMatcher.match(from: path)
+        
+        try self.export(
+            to: derivedDirectory.appending(component: "ProvisioningProfiles.json"),
+            provisioningProfiles: provisioningProfiles
+        )
+        
+        return []
     }
 
     // MARK: - Helpers
@@ -111,22 +159,26 @@ public final class SigningInteractor: SigningInteracting {
         }
 
         for signingPair in signingPairs.map(\.certificate) {
-            try signingInstaller.installCertificate(signingPair, keychainPath: keychainPath)
+            try self.signingInstaller.installCertificate(signingPair, keychainPath: keychainPath)
         }
 
         let provisioningProfileInstallLintIssues = try signingPairs.map(\.provisioningProfile)
-            .flatMap(signingInstaller.installProvisioningProfile)
+            .flatMap(self.signingInstaller.installProvisioningProfile)
+        
         try provisioningProfileInstallLintIssues.printAndThrowErrorsIfNeeded()
 
         let provisioningProfileLintIssues = signingPairs.map(\.provisioningProfile).flatMap {
-            signingLinter.lint(provisioningProfile: $0, target: target)
+            self.signingLinter.lint(provisioningProfile: $0, target: target)
         }
+        
         try provisioningProfileLintIssues.printAndThrowErrorsIfNeeded()
 
-        let signingPairLintIssues = signingPairs.flatMap(signingLinter.lint)
+        let signingPairLintIssues = signingPairs.flatMap(self.signingLinter.lint)
+        
         try signingPairLintIssues.printAndThrowErrorsIfNeeded()
 
-        let certificateLintIssues = signingPairs.map(\.certificate).flatMap(signingLinter.lint)
+        let certificateLintIssues = signingPairs.map(\.certificate).flatMap(self.signingLinter.lint)
+        
         try certificateLintIssues.printAndThrowErrorsIfNeeded()
 
         return [
@@ -135,5 +187,16 @@ public final class SigningInteractor: SigningInteracting {
             signingPairLintIssues,
             certificateLintIssues,
         ].flatMap { $0 }
+    }
+
+    private func export(
+        to filePath: AbsolutePath,
+        provisioningProfiles: [TargetName: [ConfigurationName: ProvisioningProfile]]
+    ) throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys, .prettyPrinted, .withoutEscapingSlashes]
+        let jsonData = try encoder.encode(provisioningProfiles)
+        guard let jsonString = String(data: jsonData, encoding: .utf8) else { return }
+        try FileHandler.shared.write(jsonString, path: filePath, atomically: true)
     }
 }

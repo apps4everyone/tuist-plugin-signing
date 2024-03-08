@@ -7,9 +7,9 @@ private protocol Entitlements: Decodable {
 }
 
 /// Model of a provisioning profile
-struct ProvisioningProfile: Equatable {
+struct ProvisioningProfile: Equatable, Encodable {
     /// Path to the provisioning profile
-    var path: AbsolutePath
+    let path: AbsolutePath
     let name: String
     let targetName: String
     let configurationName: String

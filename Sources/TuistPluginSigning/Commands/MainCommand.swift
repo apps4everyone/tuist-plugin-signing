@@ -20,9 +20,10 @@ public struct MainCommand: AsyncParsableCommand {
                 VersionCommand.self,
                 EncryptCommand.self,
                 DecryptCommand.self,
-                InstallCommand.self
+                InstallCommand.self,
+                ExportCommand.self
             ],
-            defaultSubcommand: InstallCommand.self
+            defaultSubcommand: ExportCommand.self
         )
         #else
         CommandConfiguration(
@@ -32,7 +33,8 @@ public struct MainCommand: AsyncParsableCommand {
                 VersionCommand.self,
                 EncryptCommand.self,
                 DecryptCommand.self,
-                InstallCommand.self
+                InstallCommand.self,
+                ExportCommand.self
             ]
         )
         #endif

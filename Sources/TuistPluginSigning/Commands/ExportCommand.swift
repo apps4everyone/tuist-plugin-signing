@@ -12,11 +12,11 @@ import Combine
 import ProjectAutomation
 
 extension MainCommand {
-    struct InstallCommand: AsyncParsableCommand {
+    struct ExportCommand: AsyncParsableCommand {
         public static var configuration: CommandConfiguration {
             CommandConfiguration(
-                commandName: "install",
-                abstract: "A command for Installing Certificates and ProvisioningProfiles"
+                commandName: "export",
+                abstract: "A command for exporting the ProvisioningProfiles.json"
             )
         }
 
@@ -28,12 +28,12 @@ extension MainCommand {
         var path: String?
 
         public func run() async throws {
-            logger.info("InstallCommand.run()")
+            logger.info("ExportCommand.run()")
 
-            try await self.install()
+            try await self.export()
         }
 
-        private func install() async throws {
+        private func export() async throws {
             var absolutePath: AbsolutePath?
             if let path {
                 absolutePath = try? AbsolutePath(validating: path)
@@ -61,7 +61,7 @@ extension MainCommand {
 
             let signingInteractor = SigningInteractor()
 
-            let issues = try signingInteractor.install(
+            let issues = try signingInteractor.export(
                 path: absolutePath,
                 graph: graph
             )

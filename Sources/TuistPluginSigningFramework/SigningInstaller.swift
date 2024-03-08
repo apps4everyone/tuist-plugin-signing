@@ -42,19 +42,22 @@ final class SigningInstaller: SigningInstalling {
 
         let provisioningProfilesPath = FileHandler.shared.homeDirectory
             // swiftlint:disable:next force_try
-            .appending(try! RelativePath(validating: "Library/MobileDevice/Provisioning Profiles"))
+            .appending(try RelativePath(validating: "Library/MobileDevice/Provisioning Profiles"))
+        
         if !FileHandler.shared.exists(provisioningProfilesPath) {
             try FileHandler.shared.createFolder(provisioningProfilesPath)
         }
+        
         let provisioningProfileSourcePath = provisioningProfile.path
-        guard let profileExtension = provisioningProfileSourcePath.extension
-        else {
+        
+        guard let profileExtension = provisioningProfileSourcePath.extension else {
             issues.append(.noFileExtension(provisioningProfileSourcePath))
             return issues
         }
 
         let provisioningProfilePath = provisioningProfilesPath
             .appending(component: provisioningProfile.uuid + "." + profileExtension)
+        
         if FileHandler.shared.exists(provisioningProfilePath) {
             try FileHandler.shared.delete(provisioningProfilePath)
         }
