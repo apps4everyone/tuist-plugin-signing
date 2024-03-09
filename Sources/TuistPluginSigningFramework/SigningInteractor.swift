@@ -107,9 +107,10 @@ public final class SigningInteractor: SigningInteracting {
         graph: ProjectAutomation.Graph
     ) throws -> [LintingIssue] {
         guard let signingDirectory = try self.signingFilesLocator.locateSigningDirectory(from: path),
-              let derivedDirectory = self.rootDirectoryLocator.locate(from: path)?
-              .appending(component: Constants.DerivedDirectory.name)
+              let rootDirectory = self.rootDirectoryLocator.locate(from: path)
         else { return [] }
+
+        let derivedDirectory = rootDirectory.appending(component: Constants.DerivedDirectory.name)
 
         let keychainPath = derivedDirectory.appending(component: Constants.DerivedDirectory.signingKeychain)
 
@@ -132,7 +133,7 @@ public final class SigningInteractor: SigningInteracting {
         let (_, provisioningProfiles) = try self.signingMatcher.match(from: path)
         
         try self.export(
-            to: derivedDirectory.appending(component: "ProvisioningProfiles.json"),
+            to: rootDirectory.appending(component: "ProvisioningProfiles.json"),
             provisioningProfiles: provisioningProfiles
         )
         
