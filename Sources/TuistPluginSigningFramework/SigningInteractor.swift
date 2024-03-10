@@ -64,15 +64,12 @@ public final class SigningInteractor: SigningInteracting {
         graph: ProjectAutomation.Graph
     ) throws -> [LintingIssue] {
         guard let signingDirectory = try self.signingFilesLocator.locateSigningDirectory(from: path),
-              let derivedDirectory = self.rootDirectoryLocator.locate(from: path)?
-              .appending(component: Constants.DerivedDirectory.name)
+              let rootDirectory = self.rootDirectoryLocator.locate(from: path)
         else { return [] }
 
-        let keychainPath = derivedDirectory.appending(component: Constants.DerivedDirectory.signingKeychain)
+        let keychainPath = rootDirectory.appending(component: Constants.DerivedDirectory.signingKeychain)
 
         let masterKey = try self.signingCipher.readMasterKey(at: signingDirectory)
-        
-        try FileHandler.shared.createFolder(derivedDirectory)
 
         if !FileHandler.shared.exists(keychainPath) {
             try self.securityController.createKeychain(at: keychainPath, password: masterKey)
@@ -110,13 +107,9 @@ public final class SigningInteractor: SigningInteracting {
               let rootDirectory = self.rootDirectoryLocator.locate(from: path)
         else { return [] }
 
-        let derivedDirectory = rootDirectory.appending(component: Constants.DerivedDirectory.name)
-
-        let keychainPath = derivedDirectory.appending(component: Constants.DerivedDirectory.signingKeychain)
+        let keychainPath = rootDirectory.appending(component: Constants.DerivedDirectory.signingKeychain)
 
         let masterKey = try signingCipher.readMasterKey(at: signingDirectory)
-        
-        try FileHandler.shared.createFolder(derivedDirectory)
 
         if !FileHandler.shared.exists(keychainPath) {
             try self.securityController.createKeychain(at: keychainPath, password: masterKey)
@@ -130,13 +123,18 @@ public final class SigningInteractor: SigningInteracting {
         
         defer { try? self.signingCipher.encryptSigning(at: path, keepFiles: false) }
 
-        let (_, provisioningProfiles) = try self.signingMatcher.match(from: path)
-        
+        let (certificatesDict, provisioningProfiles) = try self.signingMatcher.match(from: path)
+
         try self.export(
             to: rootDirectory.appending(component: "ProvisioningProfiles.json"),
             provisioningProfiles: provisioningProfiles
         )
-        
+
+        try self.export(
+            to: rootDirectory.appending(component: "Certificates.json"),
+            certificates: certificatesDict.values.map { $0 }
+        )
+
         return []
     }
 
@@ -199,5 +197,31 @@ public final class SigningInteractor: SigningInteracting {
         let jsonData = try encoder.encode(provisioningProfiles)
         guard let jsonString = String(data: jsonData, encoding: .utf8) else { return }
         try FileHandler.shared.write(jsonString, path: filePath, atomically: true)
+    }
+
+    private func export(
+        to filePath: AbsolutePath,
+        certificates: [Certificate]
+    ) throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys, .prettyPrinted, .withoutEscapingSlashes]
+        let jsonData = try encoder.encode(certificates)
+        guard let jsonString = String(data: jsonData, encoding: .utf8) else { return }
+        try FileHandler.shared.write(jsonString, path: filePath, atomically: true)
+    }
+}
+
+extension Certificate: Encodable {
+    private enum CodingKeys: String, CodingKey {
+        case name, fingerprint, developmentTeam, isRevoked
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        
+        try container.encode(self.name, forKey: .name)
+        try container.encode(self.fingerprint, forKey: .fingerprint)
+        try container.encode(self.developmentTeam, forKey: .developmentTeam)
+        try container.encode(self.isRevoked, forKey: .isRevoked)
     }
 }
