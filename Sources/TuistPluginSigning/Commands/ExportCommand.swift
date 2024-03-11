@@ -16,7 +16,7 @@ extension MainCommand {
         public static var configuration: CommandConfiguration {
             CommandConfiguration(
                 commandName: "export",
-                abstract: "A command for exporting the ProvisioningProfiles.json"
+                abstract: "A command for exporting the ProvisioningProfiles.json and Certificates.json into the /CodeSigning folder"
             )
         }
 

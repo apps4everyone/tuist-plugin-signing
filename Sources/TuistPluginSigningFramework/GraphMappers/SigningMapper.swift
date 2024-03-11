@@ -4,6 +4,18 @@ import TuistSupport
 import TuistCore
 import TuistGraph
 
+struct CodeSigningConstants {
+    public static let codeSigningKeychain = "CodeSigning.keychain"
+    public static let codeSigningFolder = "CodeSigning"
+    public static let codeSigningKeychainPath = "\(Self.codeSigningFolder)/\(Self.codeSigningKeychain)"
+    
+    public static let provisioningProfilesJson = "ProvisioningProfiles.json"
+    public static let provisioningProfilesPath = "\(Self.codeSigningFolder)/\(Self.provisioningProfilesJson)"
+    
+    public static let certificatesJson = "Certificates.json"
+    public static let certificatesPath = "\(Self.codeSigningFolder)/\(Self.certificatesJson)"
+}
+
 public class SigningMapper: ProjectMapping {
     private let signingFilesLocator: SigningFilesLocating
     private let signingMatcher: SigningMatching
@@ -41,7 +53,7 @@ public class SigningMapper: ProjectMapping {
         try signingCipher.decryptSigning(at: path, keepFiles: true)
         defer { try? signingCipher.encryptSigning(at: path, keepFiles: false) }
 
-        let keychainPath = project.path.appending(component: "Signing/" + Constants.DerivedDirectory.signingKeychain)
+        let keychainPath = project.path.appending(component: CodeSigningConstants.codeSigningKeychainPath)
 
         let (certificates, provisioningProfiles) = try signingMatcher.match(from: project.path)
 

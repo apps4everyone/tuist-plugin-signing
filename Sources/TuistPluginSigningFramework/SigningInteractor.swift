@@ -67,7 +67,7 @@ public final class SigningInteractor: SigningInteracting {
               let rootDirectory = self.rootDirectoryLocator.locate(from: path)
         else { return [] }
 
-        let keychainPath = rootDirectory.appending(component: "Signing/" + Constants.DerivedDirectory.signingKeychain)
+        let keychainPath = rootDirectory.appending(component: CodeSigningConstants.codeSigningKeychainPath)
 
         let masterKey = try self.signingCipher.readMasterKey(at: signingDirectory)
 
@@ -107,7 +107,7 @@ public final class SigningInteractor: SigningInteracting {
               let rootDirectory = self.rootDirectoryLocator.locate(from: path)
         else { return [] }
 
-        let keychainPath = rootDirectory.appending(component: "Signing/" + Constants.DerivedDirectory.signingKeychain)
+        let keychainPath = rootDirectory.appending(component: CodeSigningConstants.codeSigningKeychainPath)
 
         let masterKey = try signingCipher.readMasterKey(at: signingDirectory)
 
@@ -126,12 +126,12 @@ public final class SigningInteractor: SigningInteracting {
         let (certificatesDict, provisioningProfiles) = try self.signingMatcher.match(from: path)
 
         try self.export(
-            to: rootDirectory.appending(component: "ProvisioningProfiles.json"),
+            to: rootDirectory.appending(component: CodeSigningConstants.provisioningProfilesPath),
             provisioningProfiles: provisioningProfiles
         )
 
         try self.export(
-            to: rootDirectory.appending(component: "Certificates.json"),
+            to: rootDirectory.appending(component: CodeSigningConstants.certificatesPath),
             certificates: certificatesDict.values.map { $0 }
         )
 
