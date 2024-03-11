@@ -67,7 +67,7 @@ public final class SigningInteractor: SigningInteracting {
               let rootDirectory = self.rootDirectoryLocator.locate(from: path)
         else { return [] }
 
-        let keychainPath = rootDirectory.appending(component: Constants.DerivedDirectory.signingKeychain)
+        let keychainPath = rootDirectory.appending(component: "Signing/" + Constants.DerivedDirectory.signingKeychain)
 
         let masterKey = try self.signingCipher.readMasterKey(at: signingDirectory)
 
@@ -83,7 +83,7 @@ public final class SigningInteractor: SigningInteracting {
         
         defer { try? self.signingCipher.encryptSigning(at: path, keepFiles: false) }
 
-        let (certificates, provisioningProfiles) = try self.signingMatcher.match(from: path)
+        let (certificatesDict, provisioningProfiles) = try self.signingMatcher.match(from: path)
 
         let targets: [ProjectAutomation.Target] = graph.projects.flatMap { (_, value) in
             value.targets
@@ -93,7 +93,7 @@ public final class SigningInteractor: SigningInteracting {
             try self.install(
                 target: target,
                 keychainPath: keychainPath,
-                certificates: certificates,
+                certificates: certificatesDict,
                 provisioningProfiles: provisioningProfiles
             )
         }
@@ -107,7 +107,7 @@ public final class SigningInteractor: SigningInteracting {
               let rootDirectory = self.rootDirectoryLocator.locate(from: path)
         else { return [] }
 
-        let keychainPath = rootDirectory.appending(component: Constants.DerivedDirectory.signingKeychain)
+        let keychainPath = rootDirectory.appending(component: "Signing/" + Constants.DerivedDirectory.signingKeychain)
 
         let masterKey = try signingCipher.readMasterKey(at: signingDirectory)
 

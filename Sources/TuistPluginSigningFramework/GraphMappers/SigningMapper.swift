@@ -41,7 +41,7 @@ public class SigningMapper: ProjectMapping {
         try signingCipher.decryptSigning(at: path, keepFiles: true)
         defer { try? signingCipher.encryptSigning(at: path, keepFiles: false) }
 
-        let keychainPath = project.path.appending(component: Constants.DerivedDirectory.signingKeychain)
+        let keychainPath = project.path.appending(component: "Signing/" + Constants.DerivedDirectory.signingKeychain)
 
         let (certificates, provisioningProfiles) = try signingMatcher.match(from: project.path)
 
