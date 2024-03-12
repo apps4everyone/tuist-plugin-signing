@@ -157,11 +157,15 @@ public final class SigningInteractor: SigningInteracting {
             return (certificate: certificate, provisioningProfile: provisioningProfile)
         }
 
-        for signingPair in signingPairs.map(\.certificate) {
-            try self.signingInstaller.installCertificate(signingPair, keychainPath: keychainPath)
+        let certificates = Set(signingPairs.map(\.certificate))
+
+        for certificate in certificates {
+            try self.signingInstaller.installCertificate(certificate, keychainPath: keychainPath)
         }
 
-        let provisioningProfileInstallLintIssues = try signingPairs.map(\.provisioningProfile)
+        let provisioningProfiles = Set(signingPairs.map(\.provisioningProfile))
+
+        let provisioningProfileInstallLintIssues = try provisioningProfiles
             .flatMap(self.signingInstaller.installProvisioningProfile)
         
         try provisioningProfileInstallLintIssues.printAndThrowErrorsIfNeeded()
@@ -223,5 +227,17 @@ extension Certificate: Encodable {
         try container.encode(self.fingerprint, forKey: .fingerprint)
         try container.encode(self.developmentTeam, forKey: .developmentTeam)
         try container.encode(self.isRevoked, forKey: .isRevoked)
+    }
+}
+
+extension Certificate: Hashable {
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(self.fingerprint)
+    }
+}
+
+extension ProvisioningProfile: Hashable {
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(self.uuid)
     }
 }
