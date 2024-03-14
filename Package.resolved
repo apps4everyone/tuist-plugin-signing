@@ -221,8 +221,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tuist/tuist",
       "state" : {
-        "revision" : "c65bcc37a3352d2cc0cd8e45fe609751bc95cda6",
-        "version" : "4.5.0"
+        "revision" : "240bd994b06c82a38274d9499641e46459e515c1",
+        "version" : "4.6.0"
       }
     },
     {

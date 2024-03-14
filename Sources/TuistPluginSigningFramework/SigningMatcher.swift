@@ -5,10 +5,7 @@ typealias Fingerprint = String
 typealias TargetName = String
 typealias ConfigurationName = String
 
-/// Matching signing artifacts
 protocol SigningMatching {
-    /// - Returns: Certificates and provisioning profiles matched with their configuration and target
-    /// - Warning: Expects certificates and provisioning profiles already decrypted
     func match(from path: AbsolutePath) throws -> (
         certificates: [Fingerprint: Certificate],
         provisioningProfiles: [TargetName: [ConfigurationName: ProvisioningProfile]]
@@ -36,8 +33,10 @@ final class SigningMatcher: SigningMatching {
     ) {
         let certificateFiles = try signingFilesLocator.locateUnencryptedCertificates(from: path)
             .sorted()
+        
         let privateKeyFiles = try signingFilesLocator.locateUnencryptedPrivateKeys(from: path)
             .sorted()
+        
         let certificates: [Fingerprint: Certificate] = try zip(certificateFiles, privateKeyFiles)
             .map(certificateParser.parse)
             .reduce(into: [:]) { dict, certificate in

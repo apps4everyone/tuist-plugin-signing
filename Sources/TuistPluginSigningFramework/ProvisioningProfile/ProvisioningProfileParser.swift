@@ -60,7 +60,7 @@ final class ProvisioningProfileParser: ProvisioningProfileParsing {
             targetName: targetName,
             configurationName: configurationName,
             uuid: provisioningProfileContent.uuid,
-            teamId: provisioningProfileContent.teamId,
+            teamIds: provisioningProfileContent.teamIds,
             appId: provisioningProfileContent.appId,
             appIdName: provisioningProfileContent.appIdName,
             applicationIdPrefix: provisioningProfileContent.applicationIdPrefix,

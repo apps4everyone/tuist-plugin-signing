@@ -4,8 +4,6 @@ import OSLog
 
 let logger = Logger()
 
-/// The entry point of the plugin. Main command that must be invoked in `main.swift` file.
-
 @available(macOS 14, *)
 @main
 public struct MainCommand: AsyncParsableCommand {

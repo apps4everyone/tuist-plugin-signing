@@ -17,14 +17,9 @@ let package = Package(
         )
     ],
     dependencies: [
-        /*
-        .package(
-            path: "../tuist"
-        )
-        */
         .package(
             url: "https://github.com/tuist/tuist",
-            exact: "4.5.0"
+            exact: "4.6.0"
         ),
         .package(
             url: "https://github.com/apple/swift-tools-support-core",
@@ -52,7 +47,6 @@ let package = Package(
             dependencies: [
                 .product(name: "TSCBasic", package: "swift-tools-support-core"),
                 .product(name: "TuistCore", package: "tuist"),
-                .product(name: "TuistLoader", package: "tuist"),
                 .product(name: "TuistGraph", package: "tuist"),
                 .product(name: "TuistSupport", package: "tuist"),
                 .product(name: "TuistKit", package: "tuist"),

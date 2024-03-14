@@ -1,7 +1,6 @@
 import TSCBasic
 import TuistSupport
 
-/// Controller for command line utility `security`
 protocol SecurityControlling {
     func decodeFile(at path: AbsolutePath) throws -> String
     func importCertificate(_ certificate: Certificate, keychainPath: AbsolutePath) throws
@@ -16,32 +15,20 @@ final class SecurityController: SecurityControlling {
     }
 
     func importCertificate(_ certificate: Certificate, keychainPath: AbsolutePath) throws {
-        if try !certificateExists(certificate, keychainPath: keychainPath) {
-            try importToKeychain(at: certificate.publicKey, keychainPath: keychainPath)
-            logger.info("Imported certificate at \(certificate.publicKey.pathString)")
-
-            // found no way to check for the presence of a private key in the keychain, but fortunately keychain takes care of
-            // duplicate private keys on its own
-            try importToKeychain(at: certificate.privateKey, keychainPath: keychainPath)
-            logger.info("Imported certificate private key at \(certificate.privateKey.pathString)")
-        } else {
-            logger.info("Skipping importing certificate at \(certificate.publicKey.pathString) because it is already present")
-        }
+        try? self.importToKeychain(at: certificate.publicKey, keychainPath: keychainPath)
+        try? self.importToKeychain(at: certificate.privateKey, keychainPath: keychainPath)
     }
 
     func createKeychain(at path: AbsolutePath, password: String) throws {
         try System.shared.run(["/usr/bin/security", "create-keychain", "-p", password, path.pathString])
-        logger.info("Created keychain at \(path.pathString)")
     }
 
     func unlockKeychain(at path: AbsolutePath, password: String) throws {
         try System.shared.run(["/usr/bin/security", "unlock-keychain", "-p", password, path.pathString])
-        logger.info("Unlocked keychain at \(path.pathString)")
     }
 
     func lockKeychain(at path: AbsolutePath, password: String) throws {
         try System.shared.run(["/usr/bin/security", "lock-keychain", "-p", password, path.pathString])
-        logger.info("Locked keychain at \(path.pathString)")
     }
 
     // MARK: - Helpers

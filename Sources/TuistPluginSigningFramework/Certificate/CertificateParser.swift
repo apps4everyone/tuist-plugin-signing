@@ -26,17 +26,11 @@ enum CertificateParserError: FatalError, Equatable {
     }
 }
 
-/// Used to parse and extract info from a certificate
 protocol CertificateParsing {
-    /// Parse public-private key pair
-    /// - Returns: Parse `Certificate`
     func parse(publicKey: AbsolutePath, privateKey: AbsolutePath) throws -> Certificate
-
-    /// Retrieve fingerprint of a public key
     func parseFingerPrint(developerCertificate: Data) throws -> String
 }
 
-/// Subject attributes that are returnen with `openssl x509 -subject`
 private enum SubjectAttribute: String {
     case commonName = "CN"
     case country = "C"
@@ -100,10 +94,7 @@ final class CertificateParser: CertificateParsing {
         do {
             return try System.shared
                 .capture(["/usr/bin/openssl", "x509", "-inform", "der", "-in", path.pathString, "-noout", "-subject"])
-        } catch let TuistSupport.SystemError.terminated(_, _, standardError) {
-            if let string = String(data: standardError, encoding: .utf8) {
-                logger.warning("Parsing subject of \(path) failed with: \(string)")
-            }
+        } catch TuistSupport.SystemError.terminated(_, _, _) {
             throw CertificateParserError.fileParsingFailed(path)
         } catch {
             throw CertificateParserError.fileParsingFailed(path)
@@ -115,10 +106,7 @@ final class CertificateParser: CertificateParsing {
             return try System.shared
                 .capture(["/usr/bin/openssl", "x509", "-inform", "der", "-in", path.pathString, "-noout", "-fingerprint"])
                 .spm_chomp()
-        } catch let TuistSupport.SystemError.terminated(_, _, standardError) {
-            if let string = String(data: standardError, encoding: .utf8) {
-                logger.warning("Parsing fingerprint of \(path) failed with: \(string)")
-            }
+        } catch TuistSupport.SystemError.terminated(_, _, _) {
             throw CertificateParserError.fileParsingFailed(path)
         } catch {
             throw CertificateParserError.fileParsingFailed(path)
@@ -128,7 +116,6 @@ final class CertificateParser: CertificateParsing {
 
 extension String {
     func sanitizeEncoding() -> String {
-        // Had some real life certificates where encoding in the name was broken - e.g. \\xC3\\xA4 instead of ä
         guard let regex = try? NSRegularExpression(pattern: "(\\\\x([A-Za-z0-9]{2}))(\\\\x([A-Za-z0-9]{2}))", options: [])
         else { return self }
         let matches = regex.matches(in: self, options: [], range: NSRange(startIndex..., in: self)).reversed()

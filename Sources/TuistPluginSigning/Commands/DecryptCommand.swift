@@ -21,8 +21,7 @@ extension MainCommand {
             logger.info("DecryptCommand.run()")
 
             guard let path else {
-                logger.error("No path")
-                return
+                throw "No path"
             }
 
             try DecryptService().run(path: path)

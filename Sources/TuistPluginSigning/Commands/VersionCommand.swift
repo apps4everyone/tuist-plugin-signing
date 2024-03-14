@@ -3,7 +3,6 @@ import ArgumentParser
 import TuistPluginSigningFramework
 
 extension MainCommand {
-    /// A command to print the current version of the plugin.
     struct VersionCommand: ParsableCommand {
         static var configuration = CommandConfiguration(
             commandName: "version",

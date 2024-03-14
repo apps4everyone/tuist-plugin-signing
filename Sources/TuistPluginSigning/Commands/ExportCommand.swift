@@ -3,10 +3,8 @@ import TuistPluginSigningFramework
 import TSCBasic
 import TuistGraph
 import TuistSupport
-import TuistCore
 import TuistGraph
 import TSCBasic
-import TuistLoader
 import TuistKit
 import Combine
 import ProjectAutomation
@@ -51,8 +49,7 @@ extension MainCommand {
                 #endif
             }
             guard let absolutePath else {
-                assertionFailure("absolutePath missing")
-                return
+                throw "AbsolutePath missing"
             }
 
             logger.info("\(absolutePath)")
@@ -61,27 +58,10 @@ extension MainCommand {
 
             let signingInteractor = SigningInteractor()
 
-            let issues = try signingInteractor.export(
+            try signingInteractor.export(
                 path: absolutePath,
                 graph: graph
             )
-
-            let warnings = issues.filter { lintingIssue in
-                lintingIssue.severity == .warning
-            }
-            warnings.forEach { issue in
-                logger.warning("\(issue.reason)")
-            }
-
-            let errors = issues.filter { lintingIssue in
-                lintingIssue.severity == .error
-            }
-            guard errors.count > 0 else {
-                issues.forEach { issue in
-                    logger.error("\(issue.reason)")
-                }
-                return
-            }
         }
     }
 }

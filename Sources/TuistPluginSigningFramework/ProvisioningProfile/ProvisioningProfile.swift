@@ -6,15 +6,13 @@ private protocol Entitlements: Decodable {
     var appId: String { get }
 }
 
-/// Model of a provisioning profile
 struct ProvisioningProfile: Equatable, Encodable {
-    /// Path to the provisioning profile
     let path: AbsolutePath
     let name: String
     let targetName: String
     let configurationName: String
     let uuid: String
-    let teamId: String
+    let teamIds: [String]
     let appId: String
     let appIdName: String
     let applicationIdPrefix: [String]
@@ -25,7 +23,7 @@ struct ProvisioningProfile: Equatable, Encodable {
     struct Content {
         let name: String
         let uuid: String
-        let teamId: String
+        let teamIds: [String]
         let appId: String
         let appIdName: String
         let applicationIdPrefix: [String]
@@ -50,23 +48,22 @@ extension ProvisioningProfile.Content: Decodable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        name = try container.decode(String.self, forKey: .name)
-        uuid = try container.decode(String.self, forKey: .uuid)
-        teamId = try container.decode(DecodingFirst<String>.self, forKey: .teamIds).wrappedValue
-        appIdName = try container.decode(String.self, forKey: .appIdName)
-        applicationIdPrefix = try container.decode([String].self, forKey: .applicationIdPrefix)
-        platforms = try container.decode([String].self, forKey: .platforms)
+        self.name = try container.decode(String.self, forKey: .name)
+        self.uuid = try container.decode(String.self, forKey: .uuid)
+        self.teamIds = try container.decode([String].self, forKey: .teamIds)
+        self.appIdName = try container.decode(String.self, forKey: .appIdName)
+        self.applicationIdPrefix = try container.decode([String].self, forKey: .applicationIdPrefix)
+        self.platforms = try container.decode([String].self, forKey: .platforms)
         let entitlements = try Self.platformEntitlements(container, for: platforms)
-        appId = entitlements.appId
-        expirationDate = try container.decode(Date.self, forKey: .expirationDate)
-        developerCertificates = try container.decode([Data].self, forKey: .developerCertificates)
+        self.appId = entitlements.appId
+        self.expirationDate = try container.decode(Date.self, forKey: .expirationDate)
+        self.developerCertificates = try container.decode([Data].self, forKey: .developerCertificates)
     }
 
     private static func platformEntitlements(
         _ container: KeyedDecodingContainer<ProvisioningProfile.Content.CodingKeys>,
         for platforms: [String]
     ) throws -> Entitlements {
-        // OSX profiles are special because they use a different key to define the application identifier
         if platforms.contains("OSX") {
             try container.decode(DesktopEntitlements.self, forKey: .entitlements)
         } else {

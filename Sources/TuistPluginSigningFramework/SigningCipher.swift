@@ -35,15 +35,8 @@ enum SigningCipherError: FatalError, Equatable {
     }
 }
 
-/// SigningCiphering handles all encryption/decryption of files needed for signing (certificates, profiles, etc.)
 public protocol SigningCiphering {
-    /// Encrypts all signing files at `Tuist/Signing`
-    /// - Parameters:
-    ///     - keepFiles: Keep unencrypted files
     func encryptSigning(at path: AbsolutePath, keepFiles: Bool) throws
-    /// Decrypts all signing files at `Tuist/Signing
-    /// - Parameters:
-    ///     - keepFiles: Keep encrypted files
     func decryptSigning(at path: AbsolutePath, keepFiles: Bool) throws
     func readMasterKey(at path: AbsolutePath) throws -> String
 }
@@ -52,7 +45,6 @@ public final class SigningCipher: SigningCiphering {
     private let rootDirectoryLocator: RootDirectoryLocating
     private let signingFilesLocator: SigningFilesLocating
 
-    /// Public initializer
     public convenience init() {
         self.init(
             rootDirectoryLocator: RootDirectoryLocator(),
@@ -71,7 +63,9 @@ public final class SigningCipher: SigningCiphering {
     public func encryptSigning(at path: AbsolutePath, keepFiles: Bool) throws {
         let masterKey = try masterKey(at: path)
         let signingKeyFiles = try locateUnencryptedSigningFiles(at: path)
-        guard !signingKeyFiles.isEmpty else { return }
+        guard !signingKeyFiles.isEmpty else {
+            throw "signingKeyFiles.isEmpty"
+        }
 
         let correctlyEncryptedSigningFiles = try correctlyEncryptedSigningFiles(at: path, masterKey: masterKey)
 
@@ -85,7 +79,6 @@ public final class SigningCipher: SigningCiphering {
             .map { try encryptData($0, masterKey: masterKey) }
 
         for (key, file) in zip(cipheredKeys, signingKeyFiles) {
-            logger.info("Encrypting \(file.pathString)")
             let encryptedPath = try AbsolutePath(validating: file.pathString + "." + Constants.encryptedExtension)
             try key.write(to: encryptedPath.url)
         }
@@ -109,7 +102,6 @@ public final class SigningCipher: SigningCiphering {
             .forEach(FileHandler.shared.delete)
 
         for (key, keyFile) in zip(decipheredKeys, signingKeyFiles) {
-            logger.info("Decrypting \(keyFile.pathString)")
             let decryptedPath = try AbsolutePath(
                 validating: keyFile.parentDirectory.pathString + "/" + keyFile
                     .basenameWithoutExt
@@ -122,7 +114,6 @@ public final class SigningCipher: SigningCiphering {
         }
     }
 
-    /// - Returns: Master key data
     public func readMasterKey(at path: AbsolutePath) throws -> String {
         guard let rootDirectory = rootDirectoryLocator.locate(from: path)
         else { throw SigningCipherError.signingDirectoryNotFound(path) }
@@ -144,7 +135,6 @@ public final class SigningCipher: SigningCiphering {
             .locateEncryptedPrivateKeys(from: path)
     }
 
-    /// - Returns: Files that are already correctly encrypted
     private func correctlyEncryptedSigningFiles(
         at path: AbsolutePath,
         masterKey: Data
@@ -161,7 +151,6 @@ public final class SigningCipher: SigningCiphering {
         }
     }
 
-    /// Determines if encryption is needed
     private func isEncryptionNeeded(encryptedFile: AbsolutePath, unencryptedFile: AbsolutePath, masterKey: Data) throws -> Bool {
         guard let encodedString = String(data: try FileHandler.shared.readFile(encryptedFile), encoding: .utf8),
               let dividerIndex = encodedString.firstIndex(of: "-"),
@@ -178,11 +167,6 @@ public final class SigningCipher: SigningCiphering {
         return try FileHandler.shared.readFile(encryptedFile) != data
     }
 
-    /// Encrypts `data`
-    /// - Parameters:
-    ///     - data: Data to encrypt
-    ///     - masterKey: Master key data
-    /// - Returns: Encrypted data
     private func encryptData(_ data: Data, masterKey: Data) throws -> Data {
         let iv = try generateIv()
         let aesCipher = try AES(key: masterKey.bytes, blockMode: CTR(iv: iv.bytes), padding: .noPadding)
@@ -193,11 +177,6 @@ public final class SigningCipher: SigningCiphering {
         return data
     }
 
-    /// Decrypts `data`
-    /// - Parameters:
-    ///     - data: Data to decrypt
-    ///     - masterKey: Master key data
-    /// - Returns: Decrypted data
     private func decryptData(_ data: Data, masterKey: Data) throws -> Data {
         guard let encodedString = String(data: data, encoding: .utf8),
               let dividerIndex = encodedString.firstIndex(of: "-"),
@@ -211,12 +190,10 @@ public final class SigningCipher: SigningCiphering {
         return decryptedData
     }
 
-    /// - Returns: Master key data
     private func masterKey(at path: AbsolutePath) throws -> Data {
         try readMasterKey(at: path).data(using: .utf8)!.sha256()
     }
 
-    /// - Returns: Data of generated initialization vector
     private func generateIv() throws -> Data {
         let blockSize = 16
         var iv = Data(repeating: 0, count: blockSize)

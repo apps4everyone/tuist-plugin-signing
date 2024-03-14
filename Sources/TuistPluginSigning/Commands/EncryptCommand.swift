@@ -1,12 +1,6 @@
 import Foundation
 import TuistPluginSigningFramework
-import TSCBasic
 import ArgumentParser
-import TuistGraph
-import TuistSupport
-import TuistCore
-import TuistGraph
-import TuistLoader
 
 extension MainCommand {
     struct EncryptCommand: ParsableCommand {
@@ -28,8 +22,7 @@ extension MainCommand {
             logger.info("EncryptCommand.run()")
 
             guard let path else {
-                logger.error("No path")
-                return
+                throw "No path"
             }
 
             try EncryptService().run(path: path)

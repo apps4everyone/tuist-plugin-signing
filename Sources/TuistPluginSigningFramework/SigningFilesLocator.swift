@@ -19,8 +19,10 @@ final class SigningFilesLocator: SigningFilesLocating {
     }
 
     func locateSigningDirectory(from path: AbsolutePath) throws -> AbsolutePath? {
-        guard let rootDirectory = rootDirectoryLocator.locate(from: path)
-        else { return nil }
+        guard let rootDirectory = self.rootDirectoryLocator.locate(from: path)
+        else {
+            throw "No SigningDirectory found"
+        }
         let signingDirectory = rootDirectory.appending(components: Constants.tuistDirectoryName, Constants.signingDirectoryName)
         return FileHandler.shared.exists(signingDirectory) ? signingDirectory : nil
     }
@@ -53,8 +55,10 @@ final class SigningFilesLocator: SigningFilesLocating {
     // MARK: - Helpers
 
     private func locateSigningFiles(at path: AbsolutePath) throws -> [AbsolutePath] {
-        guard let rootDirectory = rootDirectoryLocator.locate(from: path)
-        else { return [] }
+        guard let rootDirectory = self.rootDirectoryLocator.locate(from: path)
+        else {
+            return []
+        }
         let signingDirectory = rootDirectory.appending(components: Constants.tuistDirectoryName, Constants.signingDirectoryName)
         return FileHandler.shared.glob(signingDirectory, glob: "*")
     }

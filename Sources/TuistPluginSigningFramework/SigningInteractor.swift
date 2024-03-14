@@ -1,23 +1,20 @@
 import Foundation
 import TSCBasic
 import TuistSupport
-import TuistCore
 import TuistGraph
 import ProjectAutomation
+import TuistCore
 
-/// Interacts with signing
 public protocol SigningInteracting {
-    /// Install signing for a given graph
     func install(
         path: AbsolutePath,
         graph: ProjectAutomation.Graph
-    ) throws -> [LintingIssue]
-    
-    /// Exports the provisioning profiles infos JSON
+    ) throws
+
     func export(
         path: AbsolutePath,
         graph: ProjectAutomation.Graph
-    ) throws -> [LintingIssue]
+    ) throws
 }
 
 public final class SigningInteractor: SigningInteracting {
@@ -25,7 +22,6 @@ public final class SigningInteractor: SigningInteracting {
     private let rootDirectoryLocator: RootDirectoryLocating
     private let signingMatcher: SigningMatching
     private let signingInstaller: SigningInstalling
-    private let signingLinter: SigningLinting
     private let securityController: SecurityControlling
     private let signingCipher: SigningCiphering
 
@@ -35,7 +31,6 @@ public final class SigningInteractor: SigningInteracting {
             rootDirectoryLocator: RootDirectoryLocator(),
             signingMatcher: SigningMatcher(),
             signingInstaller: SigningInstaller(),
-            signingLinter: SigningLinter(),
             securityController: SecurityController(),
             signingCipher: SigningCipher()
         )
@@ -46,7 +41,6 @@ public final class SigningInteractor: SigningInteracting {
         rootDirectoryLocator: RootDirectoryLocating,
         signingMatcher: SigningMatching,
         signingInstaller: SigningInstalling,
-        signingLinter: SigningLinting,
         securityController: SecurityControlling,
         signingCipher: SigningCiphering
     ) {
@@ -54,7 +48,6 @@ public final class SigningInteractor: SigningInteracting {
         self.rootDirectoryLocator = rootDirectoryLocator
         self.signingMatcher = signingMatcher
         self.signingInstaller = signingInstaller
-        self.signingLinter = signingLinter
         self.securityController = securityController
         self.signingCipher = signingCipher
     }
@@ -62,10 +55,12 @@ public final class SigningInteractor: SigningInteracting {
     public func install(
         path: AbsolutePath,
         graph: ProjectAutomation.Graph
-    ) throws -> [LintingIssue] {
+    ) throws {
         guard let signingDirectory = try self.signingFilesLocator.locateSigningDirectory(from: path),
               let rootDirectory = self.rootDirectoryLocator.locate(from: path)
-        else { return [] }
+        else {
+            throw "No SigningDirectory or RootDirectory found"
+        }
 
         let keychainPath = rootDirectory.appending(component: CodeSigningConstants.codeSigningKeychainPath)
 
@@ -89,7 +84,7 @@ public final class SigningInteractor: SigningInteracting {
             value.targets
         }
 
-        return try targets.flatMap { target in
+        try targets.forEach { target in
             try self.install(
                 target: target,
                 keychainPath: keychainPath,
@@ -102,10 +97,12 @@ public final class SigningInteractor: SigningInteracting {
     public func export(
         path: AbsolutePath,
         graph: ProjectAutomation.Graph
-    ) throws -> [LintingIssue] {
+    ) throws {
         guard let signingDirectory = try self.signingFilesLocator.locateSigningDirectory(from: path),
               let rootDirectory = self.rootDirectoryLocator.locate(from: path)
-        else { return [] }
+        else {
+            throw "No SigningDirectory or RootDirectory found"
+        }
 
         let keychainPath = rootDirectory.appending(component: CodeSigningConstants.codeSigningKeychainPath)
 
@@ -134,8 +131,6 @@ public final class SigningInteractor: SigningInteracting {
             to: rootDirectory.appending(component: CodeSigningConstants.certificatesPath),
             certificates: certificatesDict.values.map { $0 }
         )
-
-        return []
     }
 
     // MARK: - Helpers
@@ -145,7 +140,7 @@ public final class SigningInteractor: SigningInteracting {
         keychainPath: AbsolutePath,
         certificates: [Fingerprint: Certificate],
         provisioningProfiles: [TargetName: [ConfigurationName: ProvisioningProfile]]
-    ) throws -> [LintingIssue] {
+    ) throws {
         let configurationNames: Set<String> = Set(target.settings.configurations.map { $0.key.name } )
 
         let signingPairs = configurationNames.compactMap { configurationName -> (certificate: Certificate, provisioningProfile: ProvisioningProfile)? in
@@ -165,31 +160,9 @@ public final class SigningInteractor: SigningInteracting {
 
         let provisioningProfiles = Set(signingPairs.map(\.provisioningProfile))
 
-        let provisioningProfileInstallLintIssues = try provisioningProfiles
-            .flatMap(self.signingInstaller.installProvisioningProfile)
-        
-        try provisioningProfileInstallLintIssues.printAndThrowErrorsIfNeeded()
-
-        let provisioningProfileLintIssues = signingPairs.map(\.provisioningProfile).flatMap {
-            self.signingLinter.lint(provisioningProfile: $0, target: target)
+        try provisioningProfiles.forEach { provisioningProfile in
+            try self.signingInstaller.installProvisioningProfile(provisioningProfile)
         }
-        
-        try provisioningProfileLintIssues.printAndThrowErrorsIfNeeded()
-
-        let signingPairLintIssues = signingPairs.flatMap(self.signingLinter.lint)
-        
-        try signingPairLintIssues.printAndThrowErrorsIfNeeded()
-
-        let certificateLintIssues = signingPairs.map(\.certificate).flatMap(self.signingLinter.lint)
-        
-        try certificateLintIssues.printAndThrowErrorsIfNeeded()
-
-        return [
-            provisioningProfileInstallLintIssues,
-            provisioningProfileLintIssues,
-            signingPairLintIssues,
-            certificateLintIssues,
-        ].flatMap { $0 }
     }
 
     private func export(
@@ -210,7 +183,9 @@ public final class SigningInteractor: SigningInteracting {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .prettyPrinted, .withoutEscapingSlashes]
         let jsonData = try encoder.encode(certificates)
-        guard let jsonString = String(data: jsonData, encoding: .utf8) else { return }
+        guard let jsonString = String(data: jsonData, encoding: .utf8) else {
+            throw "Not a utf8 json string"
+        }
         try FileHandler.shared.write(jsonString, path: filePath, atomically: true)
     }
 }
