@@ -7,8 +7,7 @@ import TuistCore
 
 public protocol SigningInteracting {
     func install(
-        path: AbsolutePath,
-        graph: ProjectAutomation.Graph
+        path: AbsolutePath
     ) throws
 
     func export(
@@ -53,8 +52,7 @@ public final class SigningInteractor: SigningInteracting {
     }
 
     public func install(
-        path: AbsolutePath,
-        graph: ProjectAutomation.Graph
+        path: AbsolutePath
     ) throws {
         guard let signingDirectory = try self.signingFilesLocator.locateSigningDirectory(from: path),
               let rootDirectory = self.rootDirectoryLocator.locate(from: path)
@@ -78,20 +76,17 @@ public final class SigningInteractor: SigningInteracting {
         
         defer { try? self.signingCipher.encryptSigning(at: path, keepFiles: false) }
 
-        let (certificatesDict, provisioningProfiles) = try self.signingMatcher.match(from: path)
+        let (certificatesInfos, provisioningProfilesInfos) = try self.signingMatcher.match(from: path)
 
-        let targets: [ProjectAutomation.Target] = graph.projects.flatMap { (_, value) in
-            value.targets
-        }
+        try self.install(
+            keychainPath: keychainPath,
+            certificatesInfos: certificatesInfos
+        )
 
-        try targets.forEach { target in
-            try self.install(
-                target: target,
-                keychainPath: keychainPath,
-                certificates: certificatesDict,
-                provisioningProfiles: provisioningProfiles
-            )
-        }
+        try self.install(
+            keychainPath: keychainPath,
+            provisioningProfilesInfos: provisioningProfilesInfos
+        )
     }
 
     public func export(
@@ -136,32 +131,28 @@ public final class SigningInteractor: SigningInteracting {
     // MARK: - Helpers
 
     private func install(
-        target: ProjectAutomation.Target,
         keychainPath: AbsolutePath,
-        certificates: [Fingerprint: Certificate],
-        provisioningProfiles: [TargetName: [ConfigurationName: ProvisioningProfile]]
+        provisioningProfilesInfos: [TargetName: [ConfigurationName: ProvisioningProfile]]
     ) throws {
-        let configurationNames: Set<String> = Set(target.settings.configurations.map { $0.key.name } )
+        var provisioningProfiles = [ProvisioningProfile]()
 
-        let signingPairs = configurationNames.compactMap { configurationName -> (certificate: Certificate, provisioningProfile: ProvisioningProfile)? in
-            guard let provisioningProfile = provisioningProfiles[target.name]?[configurationName],
-                  let certificate = certificates.first(for: provisioningProfile)
-            else {
-                return nil
-            }
-            return (certificate: certificate, provisioningProfile: provisioningProfile)
+        for provisioningProfilesInfo in provisioningProfilesInfos.values {
+            provisioningProfiles.append(contentsOf: provisioningProfilesInfo.values)
         }
 
-        let certificates = Set(signingPairs.map(\.certificate))
+        try Set(provisioningProfiles).forEach { provisioningProfile in
+            try self.signingInstaller.installProvisioningProfile(provisioningProfile)
+        }
+    }
+
+    private func install(
+        keychainPath: AbsolutePath,
+        certificatesInfos: [Fingerprint: Certificate]
+    ) throws {
+        let certificates: Set<Certificate> = Set(certificatesInfos.values)
 
         for certificate in certificates {
             try self.signingInstaller.installCertificate(certificate, keychainPath: keychainPath)
-        }
-
-        let provisioningProfiles = Set(signingPairs.map(\.provisioningProfile))
-
-        try provisioningProfiles.forEach { provisioningProfile in
-            try self.signingInstaller.installProvisioningProfile(provisioningProfile)
         }
     }
 

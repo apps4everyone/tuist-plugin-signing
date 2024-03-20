@@ -55,13 +55,10 @@ extension MainCommand {
 
             logger.info("\(absolutePath)")
 
-            let graph: ProjectAutomation.Graph = try Tuist.graph()
-
             let signingInteractor = SigningInteractor()
 
             try signingInteractor.install(
-                path: absolutePath,
-                graph: graph
+                path: absolutePath
             )
         }
     }
