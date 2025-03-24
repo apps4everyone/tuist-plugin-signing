@@ -1,7 +1,7 @@
 import Foundation
-import TSCBasic
+import Path
 import TuistSupport
-import TuistGraph
+import XcodeGraph
 
 struct CodeSigningConstants {
     public static let codeSigningKeychain = "CodeSigning.keychain"

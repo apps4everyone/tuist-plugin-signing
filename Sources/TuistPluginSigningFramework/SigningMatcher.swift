@@ -1,12 +1,12 @@
 import Foundation
-import TSCBasic
+import Path
 
 typealias Fingerprint = String
 typealias TargetName = String
 typealias ConfigurationName = String
 
 protocol SigningMatching {
-    func match(from path: AbsolutePath) throws -> (
+    func match(from path: AbsolutePath) async throws -> (
         certificates: [Fingerprint: Certificate],
         provisioningProfiles: [TargetName: [ConfigurationName: ProvisioningProfile]]
     )
@@ -27,14 +27,14 @@ final class SigningMatcher: SigningMatching {
         self.certificateParser = certificateParser
     }
 
-    func match(from path: AbsolutePath) throws -> (
+    func match(from path: AbsolutePath) async throws -> (
         certificates: [Fingerprint: Certificate],
         provisioningProfiles: [TargetName: [ConfigurationName: ProvisioningProfile]]
     ) {
-        let certificateFiles = try self.signingFilesLocator.locateUnencryptedCertificates(from: path)
+        let certificateFiles = try await self.signingFilesLocator.locateUnencryptedCertificates(from: path)
             .sorted()
         
-        let privateKeyFiles = try self.signingFilesLocator.locateUnencryptedPrivateKeys(from: path)
+        let privateKeyFiles = try await self.signingFilesLocator.locateUnencryptedPrivateKeys(from: path)
             .sorted()
         
         let certificates: [Fingerprint: Certificate] = try zip(certificateFiles, privateKeyFiles)
@@ -43,7 +43,7 @@ final class SigningMatcher: SigningMatching {
                 dict[certificate.fingerprint] = certificate
             }
 
-        let provisioningProfiles: [TargetName: [ConfigurationName: ProvisioningProfile]] = try self.signingFilesLocator
+        let provisioningProfiles: [TargetName: [ConfigurationName: ProvisioningProfile]] = try await self.signingFilesLocator
             .locateProvisioningProfiles(from: path)
             .map(self.provisioningProfileParser.parse)
             .reduce(into: [:]) { dict, provisioningProfile in
