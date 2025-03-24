@@ -6,7 +6,7 @@ let package = Package(
     name: "tuist-plugin-signing",
     defaultLocalization: "en",
     platforms: [
-        .macOS(.v15)
+        .macOS(.v14)
     ],
     products: [
         .executable(
