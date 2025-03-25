@@ -1,5 +1,5 @@
 import Foundation
-import TSCBasic
+import Path
 
 struct Certificate: Equatable {
     let publicKey: AbsolutePath

@@ -1,10 +1,10 @@
 import Foundation
 import TuistPluginSigningFramework
-import TSCBasic
-import TuistGraph
+import Path
+import XcodeGraph
 import TuistSupport
-import TuistGraph
-import TSCBasic
+import XcodeGraph
+import Path
 import TuistKit
 import Combine
 import ProjectAutomation
@@ -57,7 +57,7 @@ extension MainCommand {
 
             let signingInteractor = SigningInteractor()
 
-            try signingInteractor.install(
+            try await signingInteractor.install(
                 path: absolutePath
             )
         }

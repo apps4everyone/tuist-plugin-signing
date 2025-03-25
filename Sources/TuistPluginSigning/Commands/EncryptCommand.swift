@@ -18,14 +18,14 @@ extension MainCommand {
         )
         var path: String?
         
-        func run() throws {
+        func run() async throws {
             logger.info("EncryptCommand.run()")
 
             guard let path else {
                 throw "No path"
             }
 
-            try EncryptService().run(path: path)
+            try await EncryptService().run(path: path)
         }
     }
 }

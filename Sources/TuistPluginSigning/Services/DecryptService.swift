@@ -1,5 +1,5 @@
 import Foundation
-import TSCBasic
+import Path
 import TuistPluginSigningFramework
 
 final class DecryptService {
@@ -9,9 +9,9 @@ final class DecryptService {
         self.signingCipher = signingCipher
     }
 
-    func run(path: String?) throws {
+    func run(path: String?) async throws {
         logger.info("DecryptService.run()")
         let path = try AbsolutePath.path(path)
-        try self.signingCipher.decryptSigning(at: path, keepFiles: false)
+        try await self.signingCipher.decryptSigning(at: path, keepFiles: false)
     }
 }
