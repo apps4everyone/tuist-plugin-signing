@@ -64,7 +64,9 @@ public final class SigningInteractor: SigningInteracting {
             throw "No SigningDirectory or RootDirectory found"
         }
 
-        let keychainPath = rootDirectory.appending(component: CodeSigningConstants.codeSigningKeychainPath)
+        let keychainPath = rootDirectory.appending(
+            component: CodeSigningConstants.codeSigningKeychainPath
+        )
 
         let masterKey = try await self.signingCipher.readMasterKey(at: signingDirectory)
 
@@ -72,18 +74,26 @@ public final class SigningInteractor: SigningInteracting {
             try self.securityController.createKeychain(at: keychainPath, password: masterKey)
         }
         
-        try self.securityController.unlockKeychain(at: keychainPath, password: masterKey)
+        try self.securityController.unlockKeychain(
+            at: keychainPath,
+            password: masterKey
+        )
         
-        defer { try? self.securityController.lockKeychain(at: keychainPath, password: masterKey) }
+        defer {
+            try? self.securityController.lockKeychain(
+                at: keychainPath,
+                password: masterKey
+            )
+        }
 
         try await self.signingCipher.decryptSigning(at: path, keepFiles: true)
         
-
         let (certificatesInfos, provisioningProfilesInfos) = try await self.signingMatcher.match(from: path)
 
         try self.install(
             keychainPath: keychainPath,
-            certificatesInfos: certificatesInfos
+            certificatesInfos: certificatesInfos,
+            password: masterKey
         )
 
         try self.install(
@@ -152,12 +162,17 @@ public final class SigningInteractor: SigningInteracting {
 
     private func install(
         keychainPath: AbsolutePath,
-        certificatesInfos: [Fingerprint: Certificate]
+        certificatesInfos: [Fingerprint: Certificate],
+        password: String
     ) throws {
         let certificates: Set<Certificate> = Set(certificatesInfos.values)
 
         for certificate in certificates {
-            try self.signingInstaller.installCertificate(certificate, keychainPath: keychainPath)
+            try self.signingInstaller.installCertificate(
+                certificate,
+                keychainPath: keychainPath,
+                password: password
+            )
         }
     }
 

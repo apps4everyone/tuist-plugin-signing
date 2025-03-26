@@ -3,20 +3,31 @@ import TuistSupport
 import Path
 
 protocol SigningInstalling {
-    func installProvisioningProfile(_ provisioningProfile: ProvisioningProfile) throws
-    func installCertificate(_ certificate: Certificate, keychainPath: AbsolutePath) throws
+    func installProvisioningProfile(
+        _ provisioningProfile: ProvisioningProfile
+    ) throws
+    func installCertificate(
+        _ certificate: Certificate,
+        keychainPath: AbsolutePath,
+        password: String
+    ) throws
 }
 
 final class SigningInstaller: SigningInstalling {
     private let securityController: SecurityControlling
     private let fileManager: FileManager
     
-    init(securityController: SecurityControlling = SecurityController(), fileManager: FileManager = .default) {
+    init(
+        securityController: SecurityControlling = SecurityController(),
+        fileManager: FileManager = .default
+    ) {
         self.fileManager = fileManager
         self.securityController = securityController
     }
 
-    func installProvisioningProfile(_ provisioningProfile: ProvisioningProfile) throws {
+    func installProvisioningProfile(
+        _ provisioningProfile: ProvisioningProfile
+    ) throws {
         let provisioningProfilesPath = FileHandler.shared.homeDirectory
             .appending(try Path.RelativePath(validating: "Library/MobileDevice/Provisioning Profiles"))
         
@@ -47,7 +58,15 @@ final class SigningInstaller: SigningInstalling {
         fileManager.fileExists(atPath: file)
     }
 
-    func installCertificate(_ certificate: Certificate, keychainPath: AbsolutePath) throws {
-        try self.securityController.importCertificate(certificate, keychainPath: keychainPath)
+    func installCertificate(
+        _ certificate: Certificate,
+        keychainPath: AbsolutePath,
+        password: String
+    ) throws {
+        try self.securityController.importCertificate(
+            certificate,
+            keychainPath: keychainPath,
+            password: password
+        )
     }
 }
