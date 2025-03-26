@@ -29,7 +29,9 @@ final class SigningInstaller: SigningInstalling {
         _ provisioningProfile: ProvisioningProfile
     ) throws {
         let provisioningProfilesPath = FileHandler.shared.homeDirectory
-            .appending(try Path.RelativePath(validating: "Library/MobileDevice/Provisioning Profiles"))
+            .appending(try Path.RelativePath(
+                validating: "Library/Developer/Xcode/UserData/Provisioning Profiles")
+            )
         
         if !doesFileExists(provisioningProfilesPath.pathString) {
             try FileHandler.shared.createFolder(provisioningProfilesPath)
