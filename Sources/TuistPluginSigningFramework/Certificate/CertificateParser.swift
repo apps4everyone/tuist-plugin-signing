@@ -82,7 +82,9 @@ final class CertificateParser: CertificateParsing {
     }
 
     func parseFingerPrint(developerCertificate: Data) throws -> String {
-        let temporaryFile = try FileHandler.shared.temporaryDirectory().appending(component: "developerCertificate.cer")
+        let temporaryFile = try FileHandler.shared.temporaryDirectory().appending(
+            component: "developerCertificate.cer"
+        )
         try developerCertificate.write(to: temporaryFile.url)
 
         return try fingerprint(at: temporaryFile)

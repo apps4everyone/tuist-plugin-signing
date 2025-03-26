@@ -27,7 +27,9 @@ final class SigningFilesLocator: SigningFilesLocating {
         else {
             throw "No SigningDirectory found"
         }
-        let signingDirectory = rootDirectory.appending(components: Constants.tuistDirectoryName, Constants.signingDirectoryName)
+        let signingDirectory = rootDirectory.appending(
+            components: Constants.tuistDirectoryName, Constants.signingDirectoryName
+        )
         return fileManager.fileExists(atPath: signingDirectory.pathString) ? signingDirectory : nil
     }
 

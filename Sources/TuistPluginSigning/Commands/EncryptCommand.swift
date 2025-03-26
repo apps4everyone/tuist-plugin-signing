@@ -1,9 +1,9 @@
 import Foundation
-import TuistPluginSigningFramework
 import ArgumentParser
+import Path
 
 extension MainCommand {
-    struct EncryptCommand: ParsableCommand {
+    struct EncryptCommand: AsyncParsableCommand {
         static var configuration: CommandConfiguration {
             CommandConfiguration(
                 commandName: "encrypt",
@@ -20,12 +20,11 @@ extension MainCommand {
         
         func run() async throws {
             logger.info("EncryptCommand.run()")
+            
+            let absolutePath: AbsolutePath = try MainCommand.absolutePath(path: self.path)
+            logger.info("\(absolutePath)")
 
-            guard let path else {
-                throw "No path"
-            }
-
-            try await EncryptService().run(path: path)
+            try await EncryptService().run(path: absolutePath)
         }
     }
 }

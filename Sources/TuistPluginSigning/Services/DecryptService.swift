@@ -9,9 +9,8 @@ final class DecryptService {
         self.signingCipher = signingCipher
     }
 
-    func run(path: String?) async throws {
+    func run(path: AbsolutePath) async throws {
         logger.info("DecryptService.run()")
-        let path = try AbsolutePath.path(path)
         try await self.signingCipher.decryptSigning(at: path, keepFiles: false)
     }
 }

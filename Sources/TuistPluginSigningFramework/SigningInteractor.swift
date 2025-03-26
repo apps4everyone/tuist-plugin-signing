@@ -63,10 +63,9 @@ public final class SigningInteractor: SigningInteracting {
         else {
             throw "No SigningDirectory or RootDirectory found"
         }
-
-        let keychainPath = rootDirectory.appending(
-            component: CodeSigningConstants.codeSigningKeychainPath
-        )
+        
+        let codeSigningKeychainPath = try! RelativePath(validating: CodeSigningConstants.codeSigningKeychainPath)
+        let keychainPath = rootDirectory.appending(codeSigningKeychainPath)
 
         let masterKey = try await self.signingCipher.readMasterKey(at: signingDirectory)
 
@@ -114,7 +113,11 @@ public final class SigningInteractor: SigningInteracting {
             throw "No SigningDirectory or RootDirectory found"
         }
 
-        let keychainPath = rootDirectory.appending(component: CodeSigningConstants.codeSigningKeychainPath)
+        let keychainPath = rootDirectory.appending(
+            try! RelativePath(
+                validating: CodeSigningConstants.codeSigningKeychainPath
+            )
+        )
 
         let masterKey = try await signingCipher.readMasterKey(at: signingDirectory)
 
@@ -131,12 +134,20 @@ public final class SigningInteractor: SigningInteracting {
         let (certificatesDict, provisioningProfiles) = try await self.signingMatcher.match(from: path)
 
         try self.export(
-            to: rootDirectory.appending(component: CodeSigningConstants.provisioningProfilesPath),
+            to: rootDirectory.appending(
+                RelativePath(
+                    validating: CodeSigningConstants.provisioningProfilesPath
+                )
+            ),
             provisioningProfiles: provisioningProfiles
         )
 
         try self.export(
-            to: rootDirectory.appending(component: CodeSigningConstants.certificatesPath),
+            to: rootDirectory.appending(
+                RelativePath(
+                    validating: CodeSigningConstants.certificatesPath
+                )
+            ),
             certificates: certificatesDict.values.map { $0 }
         )
         

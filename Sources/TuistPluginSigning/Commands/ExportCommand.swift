@@ -25,39 +25,20 @@ extension MainCommand {
         )
         var path: String?
 
-        public func run() async throws {
+        func run() async throws {
             logger.info("ExportCommand.run()")
 
             try await self.export()
         }
 
         private func export() async throws {
-            var absolutePath: AbsolutePath?
-            if let path {
-                absolutePath = try? AbsolutePath(validating: path)
-            } else {
-                #if DEBUG
-                if let baselineFile = ProcessInfo.processInfo.environment["TUIST_PROJECT_PATH"] {
-                    absolutePath = try AbsolutePath.root.appending(
-                        RelativePath(validating: baselineFile)
-                    )
-                } else {
-                    absolutePath = FileHandler.shared.currentPath
-                }
-                #else
-                absolutePath = FileHandler.shared.currentPath
-                #endif
-            }
-            guard let absolutePath else {
-                throw "AbsolutePath missing"
-            }
-
+            let absolutePath: AbsolutePath = try MainCommand.absolutePath(path: self.path)
             logger.info("\(absolutePath)")
 
-            let graph: ProjectAutomation.Graph = try Tuist.graph()
-
+            let graph: ProjectAutomation.Graph = try Tuist.graph(
+                at: absolutePath.pathString
+            )
             let signingInteractor = SigningInteractor()
-
             try await signingInteractor.export(
                 path: absolutePath,
                 graph: graph
