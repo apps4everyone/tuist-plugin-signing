@@ -91,8 +91,7 @@ public final class SigningInteractor: SigningInteracting {
 
         try self.install(
             keychainPath: keychainPath,
-            certificatesInfos: certificatesInfos,
-            password: masterKey
+            certificatesInfos: certificatesInfos
         )
 
         try self.install(
@@ -173,16 +172,14 @@ public final class SigningInteractor: SigningInteracting {
 
     private func install(
         keychainPath: AbsolutePath,
-        certificatesInfos: [Fingerprint: Certificate],
-        password: String
+        certificatesInfos: [Fingerprint: Certificate]
     ) throws {
         let certificates: Set<Certificate> = Set(certificatesInfos.values)
 
         for certificate in certificates {
             try self.signingInstaller.installCertificate(
                 certificate,
-                keychainPath: keychainPath,
-                password: password
+                keychainPath: keychainPath
             )
         }
     }

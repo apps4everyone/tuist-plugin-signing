@@ -7,8 +7,7 @@ protocol SecurityControlling {
     ) throws -> String
     func importCertificate(
         _ certificate: Certificate,
-        keychainPath: AbsolutePath,
-        password: String
+        keychainPath: AbsolutePath
     ) throws
     func createKeychain(
         at path: AbsolutePath,
@@ -33,18 +32,15 @@ final class SecurityController: SecurityControlling {
 
     func importCertificate(
         _ certificate: Certificate,
-        keychainPath: AbsolutePath,
-        password: String
+        keychainPath: AbsolutePath
     ) throws {
         try? self.importToKeychain(
             at: certificate.publicKey,
-            keychainPath: keychainPath,
-            password: password
+            keychainPath: keychainPath
         )
         try? self.importToKeychain(
             at: certificate.privateKey,
-            keychainPath: keychainPath,
-            password: password
+            keychainPath: keychainPath
         )
     }
 
@@ -98,16 +94,17 @@ final class SecurityController: SecurityControlling {
 
     private func importToKeychain(
         at path: AbsolutePath,
-        keychainPath: AbsolutePath,
-        password: String
+        keychainPath: AbsolutePath
     ) throws {
-        try System.shared.run([
-            "/usr/bin/security",
-            "import", path.pathString,
-            "-P", password,
-            "-T", "/usr/bin/codesign",
-            "-T", "/usr/bin/security",
-            "-k", keychainPath.pathString,
-        ])
+        try System.shared.run(
+            [
+                "/usr/bin/security",
+                "import", path.pathString,
+                "-P", "",
+                "-T", "/usr/bin/codesign",
+                "-T", "/usr/bin/security",
+                "-k", keychainPath.pathString,
+            ]
+        )
     }
 }

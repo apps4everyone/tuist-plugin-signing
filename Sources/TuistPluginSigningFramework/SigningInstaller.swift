@@ -8,8 +8,7 @@ protocol SigningInstalling {
     ) throws
     func installCertificate(
         _ certificate: Certificate,
-        keychainPath: AbsolutePath,
-        password: String
+        keychainPath: AbsolutePath
     ) throws
 }
 
@@ -62,13 +61,11 @@ final class SigningInstaller: SigningInstalling {
 
     func installCertificate(
         _ certificate: Certificate,
-        keychainPath: AbsolutePath,
-        password: String
+        keychainPath: AbsolutePath
     ) throws {
         try self.securityController.importCertificate(
             certificate,
-            keychainPath: keychainPath,
-            password: password
+            keychainPath: keychainPath
         )
     }
 }
