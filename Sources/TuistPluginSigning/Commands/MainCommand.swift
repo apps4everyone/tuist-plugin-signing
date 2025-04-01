@@ -1,6 +1,8 @@
 import Foundation
 import ArgumentParser
 import OSLog
+import Path
+import TuistSupport
 
 let logger = Logger()
 
@@ -40,5 +42,30 @@ public struct MainCommand: AsyncParsableCommand {
 
     public func run() async throws {
         logger.info("MainCommand.run()")
+    }
+}
+
+extension MainCommand {
+    static func absolutePath(path: String? = nil) throws -> AbsolutePath {
+        var absolutePath: AbsolutePath?
+        if let path {
+            absolutePath = try? AbsolutePath(validating: path)
+        } else {
+            #if DEBUG
+            if let baselineFile = ProcessInfo.processInfo.environment["TUIST_PROJECT_PATH"] {
+                absolutePath = try AbsolutePath.root.appending(
+                    RelativePath(validating: baselineFile)
+                )
+            } else {
+                absolutePath = FileHandler.shared.currentPath
+            }
+            #else
+            absolutePath = FileHandler.shared.currentPath
+            #endif
+        }
+        guard let absolutePath else {
+            throw "AbsolutePath missing"
+        }
+        return absolutePath
     }
 }

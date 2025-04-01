@@ -1,5 +1,5 @@
 import Foundation
-import TSCBasic
+import Path
 import TuistSupport
 
 enum CertificateParserError: FatalError, Equatable {
@@ -82,8 +82,10 @@ final class CertificateParser: CertificateParsing {
     }
 
     func parseFingerPrint(developerCertificate: Data) throws -> String {
-        let temporaryFile = try FileHandler.shared.temporaryDirectory().appending(component: "developerCertificate.cer")
-        try developerCertificate.write(to: temporaryFile.asURL)
+        let temporaryFile = try FileHandler.shared.temporaryDirectory().appending(
+            component: "developerCertificate.cer"
+        )
+        try developerCertificate.write(to: temporaryFile.url)
 
         return try fingerprint(at: temporaryFile)
     }

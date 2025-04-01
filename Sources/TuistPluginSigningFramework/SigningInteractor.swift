@@ -1,19 +1,19 @@
 import Foundation
-import TSCBasic
+import Path
 import TuistSupport
-import TuistGraph
+import XcodeGraph
 import ProjectAutomation
 import TuistCore
 
 public protocol SigningInteracting {
     func install(
         path: AbsolutePath
-    ) throws
+    ) async throws
 
     func export(
         path: AbsolutePath,
         graph: ProjectAutomation.Graph
-    ) throws
+    ) async throws
 }
 
 public final class SigningInteractor: SigningInteracting {
@@ -23,6 +23,7 @@ public final class SigningInteractor: SigningInteracting {
     private let signingInstaller: SigningInstalling
     private let securityController: SecurityControlling
     private let signingCipher: SigningCiphering
+    private let fileManager: FileManager
 
     public convenience init() {
         self.init(
@@ -31,7 +32,8 @@ public final class SigningInteractor: SigningInteracting {
             signingMatcher: SigningMatcher(),
             signingInstaller: SigningInstaller(),
             securityController: SecurityController(),
-            signingCipher: SigningCipher()
+            signingCipher: SigningCipher(),
+            fileManager: .default
         )
     }
 
@@ -41,8 +43,10 @@ public final class SigningInteractor: SigningInteracting {
         signingMatcher: SigningMatching,
         signingInstaller: SigningInstalling,
         securityController: SecurityControlling,
-        signingCipher: SigningCiphering
+        signingCipher: SigningCiphering,
+        fileManager: FileManager
     ) {
+        self.fileManager = fileManager
         self.signingFilesLocator = signingFilesLocator
         self.rootDirectoryLocator = rootDirectoryLocator
         self.signingMatcher = signingMatcher
@@ -53,30 +57,37 @@ public final class SigningInteractor: SigningInteracting {
 
     public func install(
         path: AbsolutePath
-    ) throws {
-        guard let signingDirectory = try self.signingFilesLocator.locateSigningDirectory(from: path),
-              let rootDirectory = self.rootDirectoryLocator.locate(from: path)
+    ) async throws {
+        guard let signingDirectory = try await self.signingFilesLocator.locateSigningDirectory(from: path),
+              let rootDirectory = try await self.rootDirectoryLocator.locate(from: path)
         else {
             throw "No SigningDirectory or RootDirectory found"
         }
+        
+        let codeSigningKeychainPath = try! RelativePath(validating: CodeSigningConstants.codeSigningKeychainPath)
+        let keychainPath = rootDirectory.appending(codeSigningKeychainPath)
 
-        let keychainPath = rootDirectory.appending(component: CodeSigningConstants.codeSigningKeychainPath)
+        let masterKey = try await self.signingCipher.readMasterKey(at: signingDirectory)
 
-        let masterKey = try self.signingCipher.readMasterKey(at: signingDirectory)
-
-        if !FileHandler.shared.exists(keychainPath) {
+        if !fileManager.fileExists(atPath: keychainPath.pathString) {
             try self.securityController.createKeychain(at: keychainPath, password: masterKey)
         }
         
-        try self.securityController.unlockKeychain(at: keychainPath, password: masterKey)
+        try self.securityController.unlockKeychain(
+            at: keychainPath,
+            password: masterKey
+        )
         
-        defer { try? self.securityController.lockKeychain(at: keychainPath, password: masterKey) }
+        defer {
+            try? self.securityController.lockKeychain(
+                at: keychainPath,
+                password: masterKey
+            )
+        }
 
-        try self.signingCipher.decryptSigning(at: path, keepFiles: true)
+        try await self.signingCipher.decryptSigning(at: path, keepFiles: true)
         
-        defer { try? self.signingCipher.encryptSigning(at: path, keepFiles: false) }
-
-        let (certificatesInfos, provisioningProfilesInfos) = try self.signingMatcher.match(from: path)
+        let (certificatesInfos, provisioningProfilesInfos) = try await self.signingMatcher.match(from: path)
 
         try self.install(
             keychainPath: keychainPath,
@@ -87,23 +98,29 @@ public final class SigningInteractor: SigningInteracting {
             keychainPath: keychainPath,
             provisioningProfilesInfos: provisioningProfilesInfos
         )
+        
+        try? await self.signingCipher.encryptSigning(at: path, keepFiles: false)
     }
 
     public func export(
         path: AbsolutePath,
         graph: ProjectAutomation.Graph
-    ) throws {
-        guard let signingDirectory = try self.signingFilesLocator.locateSigningDirectory(from: path),
-              let rootDirectory = self.rootDirectoryLocator.locate(from: path)
+    ) async throws {
+        guard let signingDirectory = try await self.signingFilesLocator.locateSigningDirectory(from: path),
+              let rootDirectory = try await self.rootDirectoryLocator.locate(from: path)
         else {
             throw "No SigningDirectory or RootDirectory found"
         }
 
-        let keychainPath = rootDirectory.appending(component: CodeSigningConstants.codeSigningKeychainPath)
+        let keychainPath = rootDirectory.appending(
+            try! RelativePath(
+                validating: CodeSigningConstants.codeSigningKeychainPath
+            )
+        )
 
-        let masterKey = try signingCipher.readMasterKey(at: signingDirectory)
+        let masterKey = try await signingCipher.readMasterKey(at: signingDirectory)
 
-        if !FileHandler.shared.exists(keychainPath) {
+        if !fileManager.fileExists(atPath: keychainPath.pathString) {
             try self.securityController.createKeychain(at: keychainPath, password: masterKey)
         }
         
@@ -111,21 +128,29 @@ public final class SigningInteractor: SigningInteracting {
         
         defer { try? self.securityController.lockKeychain(at: keychainPath, password: masterKey) }
 
-        try self.signingCipher.decryptSigning(at: path, keepFiles: true)
+        try await self.signingCipher.decryptSigning(at: path, keepFiles: true)
         
-        defer { try? self.signingCipher.encryptSigning(at: path, keepFiles: false) }
-
-        let (certificatesDict, provisioningProfiles) = try self.signingMatcher.match(from: path)
+        let (certificatesDict, provisioningProfiles) = try await self.signingMatcher.match(from: path)
 
         try self.export(
-            to: rootDirectory.appending(component: CodeSigningConstants.provisioningProfilesPath),
+            to: rootDirectory.appending(
+                RelativePath(
+                    validating: CodeSigningConstants.provisioningProfilesPath
+                )
+            ),
             provisioningProfiles: provisioningProfiles
         )
 
         try self.export(
-            to: rootDirectory.appending(component: CodeSigningConstants.certificatesPath),
+            to: rootDirectory.appending(
+                RelativePath(
+                    validating: CodeSigningConstants.certificatesPath
+                )
+            ),
             certificates: certificatesDict.values.map { $0 }
         )
+        
+        try? await self.signingCipher.encryptSigning(at: path, keepFiles: false)
     }
 
     // MARK: - Helpers
@@ -152,7 +177,10 @@ public final class SigningInteractor: SigningInteracting {
         let certificates: Set<Certificate> = Set(certificatesInfos.values)
 
         for certificate in certificates {
-            try self.signingInstaller.installCertificate(certificate, keychainPath: keychainPath)
+            try self.signingInstaller.installCertificate(
+                certificate,
+                keychainPath: keychainPath
+            )
         }
     }
 

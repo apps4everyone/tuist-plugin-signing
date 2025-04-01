@@ -1,8 +1,9 @@
 import Foundation
 import ArgumentParser
+import Path
 
 extension MainCommand {
-    struct DecryptCommand: ParsableCommand {
+    struct DecryptCommand: AsyncParsableCommand {
         static var configuration: CommandConfiguration {
             CommandConfiguration(
                 commandName: "decrypt",
@@ -17,14 +18,13 @@ extension MainCommand {
         )
         var path: String?
 
-        func run() throws {
+        func run() async throws {
             logger.info("DecryptCommand.run()")
 
-            guard let path else {
-                throw "No path"
-            }
-
-            try DecryptService().run(path: path)
+            let absolutePath: AbsolutePath = try MainCommand.absolutePath(path: self.path)
+            logger.info("\(absolutePath)")
+            
+            try await DecryptService().run(path: absolutePath)
         }
     }
 }

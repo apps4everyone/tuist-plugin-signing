@@ -1,10 +1,10 @@
 import Foundation
 import TuistPluginSigningFramework
-import TSCBasic
-import TuistGraph
+import Path
+import XcodeGraph
 import TuistSupport
-import TuistGraph
-import TSCBasic
+import XcodeGraph
+import Path
 import TuistKit
 import Combine
 import ProjectAutomation
@@ -25,39 +25,19 @@ extension MainCommand {
         )
         var path: String?
 
-        public func run() async throws {
+        func run() async throws {
             logger.info("InstallCommand.run()")
 
             try await self.install()
         }
 
         private func install() async throws {
-            var absolutePath: AbsolutePath?
-            if let path {
-                absolutePath = try? AbsolutePath(validating: path)
-            } else {
-                #if DEBUG
-                if let baselineFile = ProcessInfo.processInfo.environment["TUIST_PROJECT_PATH"] {
-                    absolutePath = try AbsolutePath.root.appending(
-                        RelativePath(validating: baselineFile)
-                    )
-                } else {
-                    absolutePath = FileHandler.shared.currentPath
-                }
-                #else
-                absolutePath = FileHandler.shared.currentPath
-                #endif
-            }
-
-            guard let absolutePath else {
-                throw "AbsolutePath missing"
-            }
-
+            let absolutePath: AbsolutePath = try MainCommand.absolutePath(path: self.path)
             logger.info("\(absolutePath)")
-
+            
             let signingInteractor = SigningInteractor()
 
-            try signingInteractor.install(
+            try await signingInteractor.install(
                 path: absolutePath
             )
         }

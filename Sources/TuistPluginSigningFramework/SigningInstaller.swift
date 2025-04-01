@@ -1,28 +1,42 @@
 import Foundation
-import TSCBasic
 import TuistSupport
+import Path
 
 protocol SigningInstalling {
-    func installProvisioningProfile(_ provisioningProfile: ProvisioningProfile) throws
-    func installCertificate(_ certificate: Certificate, keychainPath: AbsolutePath) throws
+    func installProvisioningProfile(
+        _ provisioningProfile: ProvisioningProfile
+    ) throws
+    func installCertificate(
+        _ certificate: Certificate,
+        keychainPath: AbsolutePath
+    ) throws
 }
 
 final class SigningInstaller: SigningInstalling {
     private let securityController: SecurityControlling
-
-    init(securityController: SecurityControlling = SecurityController()) {
+    private let fileManager: FileManager
+    
+    init(
+        securityController: SecurityControlling = SecurityController(),
+        fileManager: FileManager = .default
+    ) {
+        self.fileManager = fileManager
         self.securityController = securityController
     }
 
-    func installProvisioningProfile(_ provisioningProfile: ProvisioningProfile) throws {
+    func installProvisioningProfile(
+        _ provisioningProfile: ProvisioningProfile
+    ) throws {
         let provisioningProfilesPath = FileHandler.shared.homeDirectory
-            .appending(try RelativePath(validating: "Library/MobileDevice/Provisioning Profiles"))
+            .appending(try Path.RelativePath(
+                validating: "Library/Developer/Xcode/UserData/Provisioning Profiles")
+            )
         
-        if !FileHandler.shared.exists(provisioningProfilesPath) {
+        if !doesFileExists(provisioningProfilesPath.pathString) {
             try FileHandler.shared.createFolder(provisioningProfilesPath)
         }
         
-        let provisioningProfileSourcePath = provisioningProfile.path
+        let provisioningProfileSourcePath = Path.AbsolutePath(stringLiteral: provisioningProfile.path.pathString)
         
         guard let profileExtension = provisioningProfileSourcePath.extension else {
             throw "ProvisioningProfileSource without extension"
@@ -31,8 +45,8 @@ final class SigningInstaller: SigningInstalling {
         let provisioningProfilePath = provisioningProfilesPath
             .appending(component: provisioningProfile.uuid + "." + profileExtension)
         
-        if FileHandler.shared.exists(provisioningProfilePath) {
-            try FileHandler.shared.delete(provisioningProfilePath)
+        if doesFileExists(provisioningProfilePath.pathString) {
+            try fileManager.removeItem(atPath: provisioningProfilePath.pathString)
         }
         
         try FileHandler.shared.copy(
@@ -40,8 +54,18 @@ final class SigningInstaller: SigningInstalling {
             to: provisioningProfilePath
         )
     }
+    
+    func doesFileExists(_ file: String) -> Bool {
+        fileManager.fileExists(atPath: file)
+    }
 
-    func installCertificate(_ certificate: Certificate, keychainPath: AbsolutePath) throws {
-        try self.securityController.importCertificate(certificate, keychainPath: keychainPath)
+    func installCertificate(
+        _ certificate: Certificate,
+        keychainPath: AbsolutePath
+    ) throws {
+        try self.securityController.importCertificate(
+            certificate,
+            keychainPath: keychainPath
+        )
     }
 }
