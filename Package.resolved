@@ -1,5 +1,4 @@
 {
-  "originHash" : "43ca740c1d9fd1555182026b391f647948c88b5ea107c4606478d4470c9e326f",
   "pins" : [
     {
       "identity" : "aexml",
@@ -132,8 +131,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tuist/Noora",
       "state" : {
-        "revision" : "9ed17f9164ac8ad9ea3e1786097324ecddefe701",
-        "version" : "0.36.0"
+        "revision" : "9bd90e1dcec806cb6f8d0d1468f60ad54f0ee945",
+        "version" : "0.34.2"
       }
     },
     {
@@ -366,8 +365,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tuist/tuist",
       "state" : {
-        "revision" : "2223f4a8b027280c6e3e5957279244f704bd3cff",
-        "version" : "4.45.1"
+        "revision" : "b7ddba38fce1b5bc8971604b53a53d5f5b530de8",
+        "version" : "4.44.3"
       }
     },
     {
@@ -402,8 +401,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tuist/XcodeGraph.git",
       "state" : {
-        "revision" : "1c7ef35380a4c5d316f3fda68b6dd8140ab0f287",
-        "version" : "1.9.1"
+        "revision" : "40a1d9a5dc7c610ec1d433a40e36abbb01d751d8",
+        "version" : "1.8.8"
       }
     },
     {
@@ -411,8 +410,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tuist/XcodeProj",
       "state" : {
-        "revision" : "128d90e4633a8e6941586dea75426e177dfb92e6",
-        "version" : "9.0.0"
+        "revision" : "b1caa062d4aaab3e3d2bed5fe0ac5f8ce9bf84f4",
+        "version" : "8.27.7"
       }
     },
     {
@@ -461,5 +460,5 @@
       }
     }
   ],
-  "version" : 3
+  "version" : 2
 }
