@@ -19,7 +19,7 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/tuist/tuist",
-            from: "4.44.3"
+            from: "4.45.1"
         ),
         .package(
             url: "https://github.com/apple/swift-argument-parser.git",
